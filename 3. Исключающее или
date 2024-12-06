@@ -1,0 +1,81 @@
+import java.util.Arrays;
+
+public class SimplePerceptron {
+    private double[] weights;     // Веса нейронов
+    private double bias;          // Смещение (нергии)
+    private double learningRate;  // Скорость обучения
+    
+    // Конструктор
+    public SimplePerceptron(int inputSize, double learningRate) {
+        weights = new double[inputSize];
+        bias = 0.0;
+        this.learningRate = learningRate;
+
+        // Инициализация весов и смещения случайными значениями
+        for (int i = 0; i < inputSize; i++) {
+            weights[i] = Math.random();
+        }
+        bias = Math.random();
+    }
+
+    // Функция активации (в этом случае, шаговая функция)
+    private int activationFunction(double sum) {
+        return (sum >= 0) ? 1 : 0; // Возвращает 1, если сумма >= 0, иначе 0
+    }
+
+    // Прямой проход
+    public int predict(double[] inputs) {
+        double sum = 0.0;
+
+        // Вычисление взвешенной суммы
+        for (int i = 0; i < weights.length; i++) {
+            sum += weights[i] * inputs[i];
+        }
+        sum += bias; // добавляем смещение
+        
+        // Применение активационной функции
+        return activationFunction(sum);
+    }
+
+    // Обучение перцептрона
+    public void train(double[][] trainingInputs, int[] trainingOutputs, int epochs) {
+        for (int epoch = 0; epoch < epochs; epoch++) {
+            for (int i = 0; i < trainingInputs.length; i++) {
+                double[] inputs = trainingInputs[i];
+                int expectedOutput = trainingOutputs[i];
+
+                // Предсказание
+                int predictedOutput = predict(inputs);
+                
+                // Обновление весов и смещения
+                for (int j = 0; j < weights.length; j++) {
+                    weights[j] += learningRate * (expectedOutput - predictedOutput) * inputs[j];
+                }
+                bias += learningRate * (expectedOutput - predictedOutput); // корректируем смещение
+            }
+        }
+    }
+
+    public static void main(String[] args) {
+        // Обучающие данные для логической функции XOR
+        double[][] trainingInputs = {
+            {0, 0},
+            {0, 1},
+            {1, 0},
+            {1, 1}
+        };
+        int[] trainingOutputs = {0, 1, 1, 0}; // Ожидаемые выходные значения для XOR
+
+        SimplePerceptron perceptron = new SimplePerceptron(2, 0.1); // Создаем перцептрон с 2 входами
+
+        // Обучение перцептрона
+        perceptron.train(trainingInputs, trainingOutputs, 100);
+
+        // Тестируем перцептрон
+        System.out.println("Testing XOR function:");
+        for (double[] inputs : trainingInputs) {
+            int output = perceptron.predict(inputs);
+            System.out.printf("Input: %s, Output: %d%n", Arrays.toString(inputs), output);
+        }
+    }
+}
