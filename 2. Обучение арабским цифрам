@@ -1,0 +1,98 @@
+```java
+import java.util.Arrays;
+import java.util.Random;
+
+public class SimplePerceptron {
+    // Количество входов и выходов
+    private static final int INPUTS = 100; // 10x10
+    private static final int OUTPUTS = 10; // Цифры 0-9
+
+    // Весовые коэффициенты для каждого выхода
+    private double[][] weights = new double[OUTPUTS][INPUTS];
+    // Смещения (biases) для каждого выхода
+    private double[] biases = new double[OUTPUTS];
+
+    // Конструктор
+    public SimplePerceptron() {
+        Random rand = new Random();
+        // Инициализация весов и смещений случайными значениями
+        for (int i = 0; i < OUTPUTS; i++) {
+            for (int j = 0; j < INPUTS; j++) {
+                weights[i][j] = rand.nextDouble() * 0.01; // маленькие случайные значения
+            }
+            biases[i] = rand.nextDouble() * 0.01; // маленькие случайные смещения
+        }
+    }
+
+    // Функция активации (Сигмоидальная функция)
+    private double sigmoid(double x) {
+        return 1.0 / (1.0 + Math.exp(-x));
+    }
+
+    // Прямое распространение (forward pass)
+    public double[] predict(double[] input) {
+        double[] outputs = new double[OUTPUTS];
+        for (int i = 0; i < OUTPUTS; i++) {
+            double netInput = biases[i];
+            for (int j = 0; j < INPUTS; j++) {
+                netInput += weights[i][j] * input[j];
+            }
+            outputs[i] = sigmoid(netInput);
+        }
+        return outputs;
+    }
+
+    // Обучение
+    public void train(double[][] trainingData, int[] labels, int epochs, double learnRate) {
+        for (int epoch = 0; epoch < epochs; epoch++) {
+            for (int i = 0; i < trainingData.length; i++) {
+                double[] input = trainingData[i];
+                int label = labels[i];
+
+                // Получение предсказания
+                double[] outputs = predict(input);
+
+                // Обновление весов и смещений
+                for (int j = 0; j < OUTPUTS; j++) {
+                    double error = (j == label ? 1.0 : 0.0) - outputs[j]; // Ошибка 0 или 1
+                    // Обновление весов
+                    for (int k = 0; k < INPUTS; k++) {
+                        weights[j][k] += learnRate * error * outputs[j] * (1 - outputs[j]) * input[k];
+                    }
+                    // Обновление смещения
+                    biases[j] += learnRate * error * outputs[j] * (1 - outputs[j]);
+                }
+            }
+        }
+    }
+
+    public static void main(String[] args) {
+        // Примерные тренировочные данные
+        double[][] trainingData = new double[100][INPUTS]; // 100 примеров
+        int[] labels = new int[100]; // Метки классов
+
+        // Инициализация случайных данных для примера
+        Random rand = new Random();
+        for (int i = 0; i < 100; i++) {
+            for (int j = 0; j < INPUTS; j++) {
+                trainingData[i][j] = rand.nextDouble(); // случайные входные данные
+            }
+            labels[i] = rand.nextInt(OUTPUTS); // случайные метки от 0 до 9
+        }
+
+        // Создание перцептрона
+        SimplePerceptron perceptron = new SimplePerceptron();
+        
+        // Обучение перцептрона
+        perceptron.train(trainingData, labels, 1000, 0.1);
+
+        // Проверка работы перцептрона на случайном примере
+        double[] testInput = new double[INPUTS];
+        for (int j = 0; j < INPUTS; j++) {
+            testInput[j] = rand.nextDouble();
+        }
+
+        double[] prediction = perceptron.predict(testInput);
+        System.out.println("Predicted outputs: " + Arrays.toString(prediction));
+    }
+}
