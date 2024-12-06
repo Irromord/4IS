@@ -1,0 +1,93 @@
+import java.util.Arrays;
+
+public class Perceptron {
+    private double[] weights; // Веса перцептрона
+    private double learningRate; // Скорость обучения
+
+    // Конструктор перцептрона
+    public Perceptron(int inputSize, double learningRate) {
+        weights = new double[inputSize + 1]; // +1 для смещения (bias)
+        this.learningRate = learningRate;
+        // Инициализация весов случайными значениями
+        for (int i = 0; i < weights.length; i++) {
+            weights[i] = Math.random();
+        }
+    }
+
+    // Функция активации (в данном случае - шаговая функция)
+    public int activate(double[] inputs) {
+        double sum = weights[0]; // Начинаем с bias
+        for (int i = 0; i < inputs.length; i++) {
+            sum += weights[i + 1] * inputs[i];
+        }
+        return (sum >= 0) ? 1 : 0; // Возвращаем 1 если сумма >= 0, иначе 0
+    }
+
+    // Обучение перцептрона
+    public void train(double[][] trainingData, int[] labels, int epochs) {
+        for (int epoch = 0; epoch < epochs; epoch++) {
+            for (int i = 0; i < trainingData.length; i++) {
+                double[] inputs = trainingData[i];
+                int predicted = activate(inputs); // Получаем предсказание
+                int error = labels[i] - predicted; // Вычисляем ошибку
+                
+                // Обновляем веса
+                weights[0] += learningRate * error; // Обновление bias
+                for (int j = 0; j < inputs.length; j++) {
+                    weights[j + 1] += learningRate * error * inputs[j];
+                }
+            }
+        }
+    }
+
+    public static void main(String[] args) {
+        // Логическая функция "И"
+        double[][] andInputs = {
+            {0, 0},
+            {0, 1},
+            {1, 0},
+            {1, 1}
+        };
+        int[] andLabels = {0, 0, 0, 1};
+
+        Perceptron andPerceptron = new Perceptron(2, 0.1);
+        andPerceptron.train(andInputs, andLabels, 100);
+
+        System.out.println("Логическая функция AND:");
+        for (double[] input : andInputs) {
+            System.out.println(Arrays.toString(input) + " -> " + andPerceptron.activate(input));
+        }
+
+        // Логическая функция "ИЛИ"
+        double[][] orInputs = {
+            {0, 0},
+            {0, 1},
+            {1, 0},
+            {1, 1}
+        };
+        int[] orLabels = {0, 1, 1, 1};
+
+        Perceptron orPerceptron = new Perceptron(2, 0.1);
+        orPerceptron.train(orInputs, orLabels, 100);
+
+        System.out.println("\nЛогическая функция OR:");
+        for (double[] input : orInputs) {
+            System.out.println(Arrays.toString(input) + " -> " + orPerceptron.activate(input));
+        }
+
+        // Логическая функция "НЕ"
+        double[][] notInputs = {
+            {0},
+            {1}
+        };
+        int[] notLabels = {1, 0};
+
+        Perceptron notPerceptron = new Perceptron(1, 0.1);
+        notPerceptron.train(notInputs, notLabels, 100);
+
+        System.out.println("\nЛогическая функция NOT:");
+        for (double[] input : notInputs) {
+            System.out.println(Arrays.toString(input) + " -> " + notPerceptron.activate(input));
+        }
+    }
+}
