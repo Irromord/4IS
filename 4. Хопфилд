@@ -1,0 +1,96 @@
+import java.util.Arrays;
+
+public class HopfieldNetwork {
+    private int[][] weights;
+    private int size;
+
+    // Конструктор и инициализация сети
+    public HopfieldNetwork(int size) {
+        this.size = size;
+        this.weights = new int[size][size];
+    }
+
+    // Метод для обучения сети на заданном образе
+    public void train(int[] pattern) {
+        for (int i = 0; i < size; i++) {
+            for (int j = 0; j < size; j++) {
+                if (i != j) {
+                    weights[i][j] += pattern[i] * pattern[j];
+                }
+            }
+        }
+    }
+
+    // Метод для восстановления образа
+    public int[] recall(int[] pattern, int iterations) {
+        int[] output = Arrays.copyOf(pattern, pattern.length);
+        
+        for (int iter = 0; iter < iterations; iter++) {
+            for (int i = 0; i < size; i++) {
+                output[i] = activationFunction(i, output);
+            }
+        }
+        return output;
+    }
+
+    // Активационная функция (пороговая функция)
+    private int activationFunction(int index, int[] pattern) {
+        int sum = 0;
+        for (int j = 0; j < size; j++) {
+            sum += weights[index][j] * pattern[j];
+        }
+        return sum >= 0 ? 1 : -1; // возвращаем 1, если сумма >= 0, иначе -1
+    }
+
+    // Пример работы с сетью
+    public static void main(String[] args) {
+        HopfieldNetwork hopfieldNetwork = new HopfieldNetwork(100); // 10x10 = 100 нейронов
+
+        // Примеры образов для цифр (1: заливка, -1: фон)
+        int[][] digits = {
+            // Цифра 0
+            {1, 1, 1, 1, 1, 0, 1, 1, 1, 1,
+             1, 0, 0, 0, 0, 0, 0, 0, 0, 1,
+             1, 0, 0, 0, 0, 0, 0, 0, 0, 1,
+             1, 0, 0, 0, 0, 0, 0, 0, 0, 1,
+             1, 0, 0, 0, 0, 0, 0, 0, 0, 1,
+             1, 0, 0, 0, 0, 0, 0, 0, 0, 1,
+             1, 0, 0, 0, 0, 0, 0, 0, 0, 1,
+             1, 0, 0, 0, 0, 0, 0, 0, 0, 1,
+             1, 1, 1, 1, 1, 0, 1, 1, 1, 1,
+             0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
+            // Другие цифры (1-9) могут быть добавлены аналогично образом
+        };
+
+        // Обучаем сеть на образах цифр
+        for (int[] digit : digits) {
+            hopfieldNetwork.train(digit);
+        }
+
+        // Пример поврежденной цифры (например, 0)
+        int[] corruptedDigit = {
+            1, 1, 1, 1, 1, 0, 1, 1, 1, 1,
+            1, 0, 0, 0, 0, 0, 0, 0, 0, -1,  // повредили один пиксель
+            1, 0, 0, 0, 0, 0, 0, 0, 0, 1,
+            1, 0, 0, 0, 0, 0, 0, 0, 0, 1,
+            1, 0, 0, 0, 0, 0, 0, 0, 0, 1,
+            1, 0, 0, 0, 0, 0, 0, 0, 0, 1,
+            1, 0, 0, 0, 0, 0, 0, 0, 0, 1,
+            1, 0, 0, 0, 0, 0, 0, 0, 0, 1,
+            1, 1, 1, 1, 1, 0, 1, 1, 1, 1,
+            0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+        };
+
+        // Восстанавливаем поврежденный образ
+        int[] restoredDigit = hopfieldNetwork.recall(corruptedDigit, 10);
+
+        // Выводим восстановленный образ
+        System.out.println("Restored digit:");
+        for (int i = 0; i < 100; i++) {
+            if (i % 10 == 0 && i != 0) {
+                System.out.println(); // новая линия для формата 10x10
+            }
+            System.out.print(restoredDigit[i] == 1 ? "1 " : "0 ");
+        }
+    }
+}
