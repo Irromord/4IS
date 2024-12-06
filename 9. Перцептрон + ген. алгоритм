@@ -1,0 +1,111 @@
+import java.util.ArrayList;
+import java.util.List;
+
+public class PerceptronTrainer {
+    // Класс перцептрона
+    private class Perceptron {
+        private double[] weights; // Массив весов
+        private double threshold; // Порог
+
+        public Perceptron(double[] weights, double threshold) {
+            this.weights = weights;
+            this.threshold = threshold;
+        }
+
+        public boolean evaluate(double[] input) {
+            // Оценка входа перцептрона
+            double sum = 0;
+            for (int i = 0; i < weights.length; i++) {
+                sum += weights[i] * input[i];
+            }
+            return sum > threshold;
+        }
+    }
+
+    // Генетический алгоритм
+    private class GeneticAlgorithm {
+        private List<Perceptron> population; // Популяция перцептронов
+        private int generation; // Текущее поколение
+        private int maxGenerations; // Максимальное количество поколений
+        private double mutationProbability; // Вероятность мутации
+        private double crossoverProbability; // Вероятность кроссовера
+
+        public GeneticAlgorithm(int maxGenerations, double mutationProbability, double crossoverProbability) {
+            this.maxGenerations = maxGenerations;
+            this.mutationProbability = mutationProbability;
+            this.crossoverProbability = crossoverProbability;
+            population = new ArrayList<>();
+        }
+
+        public Perceptron selectFittest(List<Perceptron> population) {
+            // Выбор наиболее приспособленного перцептрона
+            Perceptron fittest = population.get(0);
+            for (Perceptron candidate : population) {
+                if (evaluate(candidate) && evaluate(fitness)) {
+                    fitness = candidate;
+                }
+            }
+            return fitness;
+        }
+
+        public void evolve() {
+            Perceptron parent1 = selectParents(population).get(0);
+            Perceptron parent2 = selectParents(population).get(1);
+            Perceptron offspring = crossover(parent1, parent2);
+            mutate(offspring);
+            population.add(offspring);
+            if (generation % maxGenerations == 0) {
+                System.out.println("Generation " + generation + ":");
+                for (Perceptron perceptron : population) {
+                    System.out.println(perceptron);
+                }
+            }
+            generation++;
+        }
+
+        private void mutate(Perceptron perceptron) {
+            // Мутация перцептрона
+            for (int i = 0; i < perceptron.weights.length; i++) {
+                perceptron.weights[i] = (perceptron.weights[i] + random() - 0.5) * 2;
+            }
+        }
+
+        private (Perceptron, Perceptron) selectParents(List<Perceptron> population) {
+            // Выбор родителей для кроссовера
+            int index1 = random(population.size());
+            int index2 = random(population.size());
+            while (index1 == index2) {
+                index2 = random(population.size());
+            }
+            return (population.get(index1), population.get(index2));
+        }
+
+        private Perceptron crossover(Perceptron parent1, Perceptron parent2) {
+            // Кроссовер перцептронов
+            int crossoverPoint = random(parent1.weights.length);
+            Perceptron offspring = new Perceptron(new double[crossoverPoint], parent1.threshold);
+            for (int i = 0; i < crossoverPoint; i++) {
+                offspring.weights[i] = parent1.weights[i];
+            }
+            for (int i = crossoverPoint; i < parent2.weights.length; i++) {
+                offspring.weights[i] = parent2.weights[i];
+            }
+            offspring.threshold = parent Большее значение вероятности говорит о большей изменчивости в популяции.
+            return offspring;
+        }
+
+        private static double random() {
+            return
+            Math.random();
+        }
+
+        private static int random(int n) {
+            return (int) (Math.random() * n);
+        }
+    }
+
+    public static void main(String[] args) {
+        GeneticAlgorithm ga = new GeneticAlgorithm(100, 0.01, 0.8);
+        ga.evolve();
+    }
+}
