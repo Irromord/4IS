@@ -1,0 +1,137 @@
+import java.util.Arrays; 
+import java.util.Random; 
+
+
+public class CounterPropagationNetwork {
+    private int inputSize;     // Размер входного слоя
+    private int kohonenSize;   // Размер слоя Кохонена
+    private int grossbergSize; // Размер слоя Гросберга
+    private double[][] kohonenWeights; // Веса для слоя Кохонена
+    private double[][] grossbergWeights; // Веса для слоя Гросберга
+    private double learningRate = 0.1; // Коэффициент обучения
+
+    // Конструктор класса, инициализирующий размеры слоев и веса
+    public CounterPropagationNetwork(int inputSize, int kohonenSize, int grossbergSize) {
+        this.inputSize = inputSize;        
+        this.kohonenSize = kohonenSize;
+        this.grossbergSize = grossbergSize;  
+        
+        // Инициализация матриц весов случайными значениями
+        kohonenWeights = new double[kohonenSize][inputSize];        
+        grossbergWeights = new double[grossbergSize][kohonenSize];
+        
+        initializeWeights(kohonenWeights); 
+        initializeWeights(grossbergWeights); 
+    }
+
+    // Метод для инициализации весов случайными числами от -0.5 до 0.5
+    private void initializeWeights(double[][] weights) {
+        Random rand = new Random(); // Создаем объект Random
+        for (int i = 0; i < weights.length; i++) {
+            for (int j = 0; j < weights[i].length; j++) {
+                // Присваиваем случайное значение весам
+                weights[i][j] = rand.nextDouble() - 0.5;
+            }
+        }
+    }
+
+    // Метод для выполнения прямого прохода через слой Кохонена
+    private int forwardKohonen(double[] input) {
+        double maxSimilarity = -Double.MAX_VALUE; // Сохраняем максимальную схожесть
+        int winnerIndex = -1; // Индекс "победителя"
+        
+        // Пробегаем по всем весам слоя Кохонена
+        for (int i = 0; i < kohonenWeights.length; i++) {
+            double similarity = 0; // Схожесть для текущего нейрона
+            
+            // Рассчитываем схожесть
+            for (int j = 0; j < input.length; j++) {
+                similarity += kohonenWeights[i][j] * input[j];
+            }
+            // Проверяем, является ли текущий нейрон победителем
+            if (similarity > maxSimilarity) {
+                maxSimilarity = similarity; // Обновляем максимальную схожесть
+                winnerIndex = i; // Запоминаем индекс победителя
+            }
+        }
+        return winnerIndex; // Возвращаем индекс победителя
+    }
+
+    // Метод для выполнения прямого прохода через слой Гросберга
+    private double[] forwardGrossberg(int kohonenIndex) {
+        return grossbergWeights[kohonenIndex]; // Возвращаем веса соответствующего нейрона
+    }
+
+    // Метод для обучения сети
+    public void train(double[][] inputs, double[][] outputs, int epochs) {
+        // Выполняем заданное количество эпох
+        for (int epoch = 0; epoch < epochs; epoch++) {
+            // Обрабатываем каждую входную выборку
+            for (int i = 0; i < inputs.length; i++) {
+                // Находим победителя слоя Кохонена
+                int kohonenWinner = forwardKohonen(inputs[i]);
+                
+                // Обновляем веса слоя Кохонена
+                for (int j = 0; j < inputSize; j++) {
+                    kohonenWeights[kohonenWinner][j] += learningRate * (inputs[i][j] - kohonenWeights[kohonenWinner][j]);
+                }
+                
+                // Обновляем веса слоя Гросберга
+                for (int j = 0; j < grossbergSize; j++) {
+                    grossbergWeights[kohonenWinner][j] += learningRate * (outputs[i][j] - grossbergWeights[kohonenWinner][j]);
+                }
+            }
+        }
+    }
+
+    // Метод для предсказания выхода на основе входных данных
+    public double[] predict(double[] input) {
+        int kohonenWinner = forwardKohonen(input); // Находим победителя слоя Кохонена
+        return forwardGrossberg(kohonenWinner); // Возвращаем предсказание из слоя Гросберга
+    }
+
+    // Главный метод для запуска программы
+    public static void main(String[] args) {
+        int inputSize = 100; // Размер входных данных
+        int kohonenSize = 10; // Размер слоя Кохонена
+        int outputSize = 10; // Размер выходных данных
+
+        // Создаем экземпляр сети контрпропаганды
+        CounterPropagationNetwork cpn = new CounterPropagationNetwork(inputSize, kohonenSize, outputSize);
+        
+        double[][] inputs = generateFakeData(); // Генерируем фейковые данные
+        double[][] outputs = generateLabels(); // Генерируем метки
+
+        // Обучаем сеть
+        cpn.train(inputs, outputs, 1000);
+        
+        // Выводим предсказания для тестовых данных
+        for (int i = 0; i < inputs.length; i++) {
+            double[] prediction = cpn.predict(inputs[i]);
+            System.out.println("Ожидаемый: " + Arrays.toString(outputs[i]));
+            System.out.println("Предсказанный: " + Arrays.toString(prediction));
+        }
+    }
+
+    // Метод для генерации фейковых входных данных
+    public static double[][] generateFakeData() {
+        double[][] data = new double[10][100]; // Создаем двумерный массив для данных
+        Random rand = new Random(); // Создаем объект Random
+        for (int i = 0; i < 10; i++) {
+            for (int j = 0; j < 100; j++) {
+                // Заполняем данные случайными 0 и 1
+                data[i][j] = rand.nextDouble() > 0.5 ? 1 : 0;
+            }
+        }
+        return data; // Возвращаем сгенерированные данные
+    }
+
+    // Метод для генерации меток
+    public static double[][] generateLabels() {
+        double[][] labels = new double[10][10]; // Создаем двумерный массив для меток
+        for (int i = 0; i < 10; i++) {
+            labels[i][i] = 1.0; // Устанавливаем метку для каждого класса
+        }
+        return labels; // Возвращаем сгенерированные метки
+    }
+}
