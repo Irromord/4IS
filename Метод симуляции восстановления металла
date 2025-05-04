@@ -1,0 +1,74 @@
+import java.util.Random;
+
+public class SimulatedAnnealing {
+
+    private static final Random random = new Random();
+
+    // Функция, которую нужно максимизировать. В примере - простая порабола
+    //  Можно заменить на свою функцию
+    public static double objectiveFunction(double x) {
+        return -Math.pow(x, 2) + 10 * x - 5;
+    }
+
+    // Метод симуляции отжига для поиска максимума функции
+    public static double simulatedAnnealing(double initialTemperature, double coolingRate, double initialSolution,
+                                              double minSolution, double maxSolution, int iterations) {
+
+        double currentSolution = initialSolution;
+        double bestSolution = currentSolution;
+        double bestObjective = objectiveFunction(bestSolution);
+        double temperature = initialTemperature;
+
+        for (int i = 0; i < iterations; i++) {
+            // 1. Генерируем нового кандидата (соседнее решение)
+            double newSolution = currentSolution + (random.nextDouble() * 2 - 1);  // Малое случайное изменение
+            // Ограничиваем, чтобы решение не выходило за пределы
+            newSolution = Math.max(minSolution, Math.min(maxSolution, newSolution));
+
+            // 2. Оцениваем новое решение
+            double newObjective = objectiveFunction(newSolution);
+
+            // 3. Считаем разницу в значении целевой функции
+            double delta = newObjective - objectiveFunction(currentSolution);
+
+            // 4. Принимаем новое решение, если оно лучше
+            if (delta > 0) {
+                currentSolution = newSolution;
+                if (newObjective > bestObjective) {
+                    bestSolution = newSolution;
+                    bestObjective = newObjective;
+                }
+            } else {
+                // 5. Если новое решение хуже, принимаем его с вероятностью exp(delta/T)
+                double acceptanceProbability = Math.exp(delta / temperature);
+                if (random.nextDouble() < acceptanceProbability) {
+                    currentSolution = newSolution;
+                }
+            }
+
+            // 6. Уменьшаем температуру
+            temperature *= coolingRate;
+
+            // Вывод текущего состояния (полезно для отладки и наблюдения за процессом)
+            //System.out.println("Iteration: " + i + ", Temp: " + temperature + ", Current: " + currentSolution + ", Best: " + bestSolution);
+        }
+
+        System.out.println("Best solution found: x = " + bestSolution + ", Objective value: " + bestObjective);
+        return bestSolution; // Возвращаем лучшее найденное решение
+    }
+
+
+    public static void main(String[] args) {
+        // Параметры алгоритма:
+        double initialTemperature = 100.0;   // Начальная температура
+        double coolingRate = 0.99;        // Коэффициент охлаждения (0 < coolingRate < 1)
+        double initialSolution = 0.0;       // Начальное решение
+        double minSolution = -10.0;       // Минимальное значение решения
+        double maxSolution = 10.0;        // Максимальное значение решения
+        int iterations = 1000;            // Количество итераций
+
+        // Запускаем алгоритм
+        double bestSolution = simulatedAnnealing(initialTemperature, coolingRate, initialSolution, minSolution, maxSolution, iterations);
+        System.out.println("Final Result: " + bestSolution);
+    }
+}
