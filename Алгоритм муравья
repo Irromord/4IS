@@ -1,0 +1,198 @@
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Random;
+
+public class AntColonyOptimization {
+
+    private double[][] distances; // Матрица расстояний между городами
+    private double[][] pheromone; // Матрица феромонов
+    private int numberOfCities;  // Количество городов
+    private int numberOfAnts;    // Количество муравьев
+    private double alpha;         // Влияние феромона (обычно между 0 и 5)
+    private double beta;          // Влияние эвристики (расстояния) (обычно между 3 и 5)
+    private double evaporationRate; // Коэффициент испарения феромона (обычно между 0 и 1)
+    private double Q;            // Количество феромона, оставляемое муравьем (обычно 1)
+    private int maxIterations;    // Максимальное количество итераций
+
+    private Random random = new Random();
+
+    public AntColonyOptimization(double[][] distances, int numberOfAnts, double alpha, double beta, double evaporationRate, double Q, int maxIterations) {
+        this.distances = distances;
+        this.numberOfCities = distances.length;
+        this.numberOfAnts = numberOfAnts;
+        this.alpha = alpha;
+        this.beta = beta;
+        this.evaporationRate = evaporationRate;
+        this.Q = Q;
+        this.maxIterations = maxIterations;
+
+        this.pheromone = new double[numberOfCities][numberOfCities];
+        initializePheromone();
+    }
+
+    private void initializePheromone() {
+        // Инициализируем феромоны небольшим значением (например, 0.1)
+        double initialPheromone = 0.1;
+        for (int i = 0; i < numberOfCities; i++) {
+            for (int j = 0; j < numberOfCities; j++) {
+                pheromone[i][j] = initialPheromone;
+            }
+        }
+    }
+
+    public List<Integer> solve() {
+        List<Integer> bestTour = null;
+        double bestTourLength = Double.MAX_VALUE;
+
+        for (int iteration = 0; iteration < maxIterations; iteration++) {
+            List<List<Integer>> antTours = new ArrayList<>();
+
+            // Каждый муравей строит свой тур
+            for (int ant = 0; ant < numberOfAnts; ant++) {
+                List<Integer> tour = constructTour(ant);
+                antTours.add(tour);
+
+                double tourLength = calculateTourLength(tour);
+                if (tourLength < bestTourLength) {
+                    bestTourLength = tourLength;
+                    bestTour = tour;
+                }
+            }
+
+            // Обновление феромонов
+            updatePheromones(antTours);
+
+            // Вывод лучшего тура на каждой итерации (для отладки и наблюдения)
+            //System.out.println("Iteration " + iteration + ": Best tour length = " + bestTourLength);
+        }
+
+        System.out.println("Best tour length: " + bestTourLength);
+        return bestTour;
+    }
+
+    private List<Integer> constructTour(int ant) {
+        List<Integer> tour = new ArrayList<>();
+        boolean[] visited = new boolean[numberOfCities];
+        int currentCity = random.nextInt(numberOfCities); // Начинаем из случайного города
+
+        tour.add(currentCity);
+        visited[currentCity] = true;
+
+        while (tour.size() < numberOfCities) {
+            int nextCity = selectNextCity(currentCity, visited);
+            tour.add(nextCity);
+            visited[nextCity] = true;
+            currentCity = nextCity;
+        }
+
+        return tour;
+    }
+
+    private int selectNextCity(int currentCity, boolean[] visited) {
+        double[] probabilities = calculateProbabilities(currentCity, visited);
+        double randomValue = random.nextDouble();
+        double cumulativeProbability = 0.0;
+
+        for (int i = 0; i < numberOfCities; i++) {
+            if (!visited[i]) {
+                cumulativeProbability += probabilities[i];
+                if (randomValue <= cumulativeProbability) {
+                    return i;
+                }
+            }
+        }
+
+        // Если что-то пошло не так, возвращаем непосещенный город (последний в списке)
+        for (int i = 0; i < numberOfCities; i++) {
+            if (!visited[i]) {
+                return i;
+            }
+        }
+
+        // Все города посещены (должно быть невозможно, но добавляем для безопасности)
+        return -1; // Возвращаем -1, если все города посещены (не должно происходить)
+    }
+
+    private double[] calculateProbabilities(int currentCity, boolean[] visited) {
+        double[] probabilities = new double[numberOfCities];
+        double total = 0.0;
+
+        for (int i = 0; i < numberOfCities; i++) {
+            if (!visited[i]) {
+                probabilities[i] = Math.pow(pheromone[currentCity][i], alpha) * Math.pow(1.0 / distances[currentCity][i], beta);
+                total += probabilities[i];
+            }
+        }
+
+        // Нормализация вероятностей
+        for (int i = 0; i < numberOfCities; i++) {
+            if (!visited[i]) {
+                probabilities[i] /= total;
+            } else {
+                probabilities[i] = 0.0; //Вероятность посещения посещенного города равна 0
+            }
+        }
+
+        return probabilities;
+    }
+
+    private void updatePheromones(List<List<Integer>> antTours) {
+        // Испарение феромона
+        for (int i = 0; i < numberOfCities; i++) {
+            for (int j = 0; j < numberOfCities; j++) {
+                pheromone[i][j] *= (1.0 - evaporationRate);
+            }
+        }
+
+        // Добавление феромона муравьями
+        for (List<Integer> tour : antTours) {
+            double tourLength = calculateTourLength(tour);
+            for (int i = 0; i < numberOfCities - 1; i++) {
+                int city1 = tour.get(i);
+                int city2 = tour.get(i + 1);
+                pheromone[city1][city2] += Q / tourLength;
+                pheromone[city2][city1] = pheromone[city1][city2]; // Предполагаем симметричную задачу
+            }
+            // Добавляем феромон для последнего ребра, соединяющего последний город с первым
+            int lastCity = tour.get(numberOfCities - 1);
+            int firstCity = tour.get(0);
+            pheromone[lastCity][firstCity] += Q / tourLength;
+            pheromone[firstCity][lastCity] = pheromone[lastCity][firstCity];
+
+        }
+    }
+
+
+    private double calculateTourLength(List<Integer> tour) {
+        double length = 0.0;
+        for (int i = 0; i < numberOfCities - 1; i++) {
+            length += distances[tour.get(i)][tour.get(i + 1)];
+        }
+        length += distances[tour.get(numberOfCities - 1)][tour.get(0)]; // Возвращаемся в начальный город
+        return length;
+    }
+
+
+
+    public static void main(String[] args) {
+        // Пример данных для задачи коммивояжера (матрица расстояний)
+        double[][] distances = {
+                {0, 10, 15, 20},
+                {10, 0, 35, 25},
+                {15, 35, 0, 30},
+                {20, 25, 30, 0}
+        };
+
+        int numberOfAnts = 10;
+        double alpha = 1.0;
+        double beta = 5.0;
+        double evaporationRate = 0.5;
+        double Q = 100;
+        int maxIterations = 100;
+
+        AntColonyOptimization aco = new AntColonyOptimization(distances, numberOfAnts, alpha, beta, evaporationRate, Q, maxIterations);
+        List<Integer> bestTour = aco.solve();
+
+        System.out.println("Best tour: " + bestTour); // Вывод лучшего тура
+    }
+}
